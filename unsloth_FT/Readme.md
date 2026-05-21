@@ -126,16 +126,6 @@ print(tokenizer.decode(outputs[0], skip_special_tokens=True))
 - Instruction tuning best practices
 - Model saving and merging strategies
 
-## 🔄 Future Improvements
-
-- Training for more epochs / larger dataset
-- Evaluation metrics (MT-Bench, AlpacaEval)
-- Quantized deployment (GGUF)
-- Multi-turn conversation fine-tuning
-
-## 📄 License
-
-This project is for educational and research purposes.
 
 ---
 
@@ -147,13 +137,3 @@ This project is for educational and research purposes.
 **Made with ❤️ using Unsloth**
 ```
 
----
-
-### How to use this:
-
-1. Copy the entire content above
-2. Create a new file called `README.md` in your project folder
-3. Paste the content
-4. (Optional) Update any paths or model names if needed
-
-Would you like me to also create a shorter version or add any specific sections (like training logs, screenshots, or performance comparison)?
