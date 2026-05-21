@@ -31,12 +31,12 @@ This project showcases how to efficiently fine-tune the **TinyLlama-1.1B** model
 ## 📁 Project Structure
 
 ```
-unsloth-practical/
-├── unsloth_practical (1).ipynb    # Main notebook
-├── lora_model/                    # LoRA adapters (saved)
-├── merged_model/                  # Fully merged 16-bit model
-├── outputs/                       # Training checkpoints
-└── README.md
+    unsloth-practical/
+    ├── unsloth_practical (1).ipynb    # Main notebook
+    ├── lora_model/                    # LoRA adapters (saved)
+    ├── merged_model/                  # Fully merged 16-bit model
+    ├── outputs/                       # Training checkpoints
+    └── README.md
 ```
 
 ## 🚀 What Was Done
