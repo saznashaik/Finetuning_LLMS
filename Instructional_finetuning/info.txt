@@ -1,1 +1,416 @@
-hands on Instructional finetuning 
+# Pharma Instruction Tuning using TinyLlama + LoRA + QLoRA
+
+## Overview
+
+This project demonstrates how to fine-tune the Hugging Face model TinyLlama for pharmaceutical instruction-following tasks using:
+
+* LoRA (Low-Rank Adaptation)
+* QLoRA (4-bit Quantization)
+* Hugging Face Transformers
+* PEFT (Parameter-Efficient Fine-Tuning)
+
+The model is trained on a custom CSV dataset containing pharmaceutical instructions, inputs, and responses.
+
+The goal is to create a lightweight domain-specific medical/pharma assistant capable of answering pharmaceutical questions efficiently using minimal GPU memory.
+
+---
+
+# Project Architecture
+
+```text
+Dataset (CSV)
+      │
+      ▼
+Formatting using Chat Template
+      │
+      ▼
+Tokenization + Response Masking
+      │
+      ▼
+QLoRA Quantized TinyLlama Model
+      │
+      ▼
+LoRA Fine-Tuning
+      │
+      ▼
+Trained Pharma Assistant
+```
+
+---
+
+# Technologies Used
+
+| Technology   | Purpose                 |
+| ------------ | ----------------------- |
+| Python       | Programming Language    |
+| PyTorch      | Deep Learning Framework |
+| Transformers | Model & Tokenizer APIs  |
+| PEFT         | LoRA Fine-Tuning        |
+| BitsAndBytes | 4-bit Quantization      |
+| Datasets     | Dataset Loading         |
+| TinyLlama    | Base LLM                |
+
+---
+
+# Model Information
+
+| Property           | Value                       |
+| ------------------ | --------------------------- |
+| Base Model         | TinyLlama-1.1B-Chat-v1.0    |
+| Model Type         | Causal Language Model       |
+| Fine-Tuning Method | LoRA                        |
+| Quantization       | 4-bit QLoRA                 |
+| Domain             | Pharmaceutical / Medical QA |
+
+---
+
+# What We Implemented
+
+## 1. Dataset Loading
+
+We loaded a custom CSV dataset using Hugging Face datasets library.
+
+Dataset structure:
+
+```csv
+instruction,input,output
+Explain Metformin,None,Metformin activates AMPK...
+What is Ezetimibe?,None,Ezetimibe lowers cholesterol...
+```
+
+Code:
+
+```python
+dataset = load_dataset(
+    "csv",
+    data_files="/content/pharma_instruction_data.csv",
+    split="train"
+)
+```
+
+---
+
+# 2. Chat Template Formatting
+
+Since TinyLlama is already an instruction/chat model, we converted the dataset into chat format.
+
+Example formatted sample:
+
+```text
+<|user|>
+What is Ezetimibe?
+
+<|assistant|>
+Ezetimibe is a cholesterol absorption inhibitor...
+```
+
+Benefits:
+
+* Matches TinyLlama training style
+* Improves response quality
+* Better instruction following
+
+---
+
+# 3. Tokenization
+
+We converted text into tokens using the tokenizer.
+
+```python
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+```
+
+We also:
+
+* Added padding token
+* Applied truncation
+* Fixed sequence length
+
+---
+
+# 4. Response Masking
+
+We trained the model ONLY on assistant responses.
+
+Why?
+
+Without masking:
+
+* model learns both question and answer
+
+With masking:
+
+* model learns only answer generation
+
+Implementation:
+
+```python
+labels[:response_token_start] = [-100] * response_token_start
+```
+
+`-100` tells PyTorch to ignore those tokens during loss calculation.
+
+---
+
+# 5. QLoRA Quantization
+
+We used 4-bit quantization to reduce GPU memory usage.
+
+Benefits:
+
+* Faster training
+* Lower VRAM usage
+* Enables training on consumer GPUs
+
+Configuration:
+
+```python
+BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4"
+)
+```
+
+---
+
+# 6. LoRA Fine-Tuning
+
+Instead of training all model parameters, we trained only lightweight adapter layers.
+
+Benefits:
+
+* Faster training
+* Very small checkpoints
+* Lower compute cost
+* Preserves base model knowledge
+
+LoRA modifies:
+
+* q_proj
+* k_proj
+* v_proj
+* o_proj
+
+---
+
+# 7. Trainer Setup
+
+We used Hugging Face Trainer API.
+
+Training Features:
+
+* Gradient accumulation
+* FP16 mixed precision
+* Cosine scheduler
+* AdamW optimizer
+
+---
+
+# 8. Model Saving
+
+After training:
+
+* LoRA adapters are saved
+* Tokenizer is saved
+
+```python
+trainer.model.save_pretrained(save_path)
+```
+
+---
+
+# 9. Inference Pipeline
+
+For inference:
+
+1. Load base TinyLlama model
+2. Load trained LoRA adapter
+3. Generate pharma responses
+
+Example:
+
+```python
+What is Ezetimibe?
+```
+
+Expected output:
+
+```text
+Ezetimibe is a cholesterol absorption inhibitor used to lower LDL cholesterol levels.
+```
+
+---
+
+# Why LoRA Instead of Full Fine-Tuning?
+
+| Full Fine-Tuning  | LoRA           |
+| ----------------- | -------------- |
+| High VRAM usage   | Low VRAM usage |
+| Slow training     | Fast training  |
+| Large checkpoints | Small adapters |
+| Expensive         | Efficient      |
+
+---
+
+# Why QLoRA?
+
+QLoRA combines:
+
+* Quantization
+* LoRA
+
+This enables:
+
+* Training billion-parameter models
+* On limited GPU hardware
+
+---
+
+# Folder Structure
+
+```text
+project/
+│
+├── pharma_instruction_data.csv
+├── train.ipynb
+├── tinyllama-pharma/
+│   ├── adapter_config.json
+│   ├── adapter_model.safetensors
+│   ├── tokenizer.json
+│   └── tokenizer_config.json
+│
+└── README.md
+```
+
+---
+
+# Training Configuration
+
+| Parameter             | Value |
+| --------------------- | ----- |
+| Epochs                | 5     |
+| Batch Size            | 1     |
+| Gradient Accumulation | 8     |
+| Learning Rate         | 5e-5  |
+| Quantization          | 4-bit |
+| LoRA Rank             | 8     |
+
+---
+
+# Hardware Requirements
+
+Minimum:
+
+* NVIDIA GPU with 8GB VRAM
+
+Recommended:
+
+* 16GB+ VRAM
+
+Tested on:
+
+* Google Colab GPU
+
+---
+
+# Key Learnings
+
+## Instruction Tuning
+
+Instruction tuning teaches models:
+
+* question answering
+* task following
+* conversational behavior
+
+---
+
+## Response Masking
+
+Masking improves:
+
+* answer quality
+* instruction adherence
+* training efficiency
+
+---
+
+## Parameter Efficient Fine-Tuning (PEFT)
+
+PEFT methods:
+
+* reduce memory usage
+* speed up experimentation
+* simplify deployment
+
+---
+
+# Common Issues & Fixes
+
+## Issue: Model outputs only one word
+
+Cause:
+
+* Tiny dataset
+* Incorrect LoRA loading
+* No masking
+
+Fix:
+
+* Increase dataset size
+* Load adapters correctly
+* Use response masking
+
+---
+
+## Issue: Multiple PEFT warnings
+
+Cause:
+
+* Applying LoRA twice
+
+Fix:
+
+* Never call `get_peft_model()` on an already adapted model
+
+---
+
+## Issue: CUDA Out of Memory
+
+Fixes:
+
+* reduce batch size
+* enable 4-bit quantization
+* reduce max_length
+
+---
+
+# Example Use Cases
+
+* Pharmaceutical chatbot
+* Drug information assistant
+* Medical Q&A system
+* Clinical education tool
+* Healthcare AI assistant
+
+---
+
+# References
+
+* [Transformers Documentation](https://huggingface.co/docs/transformers/index?utm_source=chatgpt.com)
+* [PEFT Documentation](https://huggingface.co/docs/peft/index?utm_source=chatgpt.com)
+* [BitsAndBytes Documentation](https://huggingface.co/docs/bitsandbytes/index?utm_source=chatgpt.com)
+* [TinyLlama Model Page](https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0?utm_source=chatgpt.com)
+
+---
+
+# Conclusion
+
+This project successfully demonstrates:
+
+* Efficient instruction tuning
+* QLoRA optimization
+* LoRA-based domain adaptation
+* Pharmaceutical conversational AI development
+
+Using TinyLlama + QLoRA + LoRA allows building lightweight domain-specific LLMs with limited hardware resources while maintaining strong conversational capabilities.
