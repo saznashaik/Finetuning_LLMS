@@ -1,0 +1,2 @@
+hands on dpo (preference model)
+ base_model--> non_instruction_model--> instruction_model--> preference_model
