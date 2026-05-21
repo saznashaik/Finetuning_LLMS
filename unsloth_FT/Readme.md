@@ -131,9 +131,3 @@ print(tokenizer.decode(outputs[0], skip_special_tokens=True))
 
 **Base Model**: [TinyLlama/TinyLlama-1.1B-Chat-v1.0](https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0)  
 **Framework**: [Unsloth](https://github.com/unslothai/unsloth)
-
----
-
-**Made with ❤️ using Unsloth**
-```
-
